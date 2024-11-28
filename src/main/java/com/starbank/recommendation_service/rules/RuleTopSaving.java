@@ -13,8 +13,7 @@ public class RuleTopSaving implements RecommendationRuleSet {
 
     @Override
     public Optional<RecommendationDTO> getRecommendation(String userId) {
-        // Логика проверки, подходит ли пользователь под специальное предложение, будет зависеть от метода репозитория
-        if (repository.checkRecommendtionTopSaving(userId) != null) {
+        if (repository.checkRecommendtionTopSaving(userId)) {
             return Optional.of(new RecommendationDTO("59efc529-2fff-41af-baff-90ccd7402925",
                     "Откройте свою собственную «Копилку» с нашим банком! «Копилка» — это уникальный банковский инструмент," +
                             " который поможет вам легко и удобно накапливать деньги на важные цели. Больше никаких забытых чеков и потерянных квитанций — всё под контролем!" +
