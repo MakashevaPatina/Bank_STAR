@@ -1,5 +1,7 @@
 package com.starbank.recommendation_service.rules;
 
+import com.starbank.recommendation_service.dto.RecommendationDTO;
+import com.starbank.recommendation_service.repository.RecommendationsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -13,8 +15,9 @@ public class RuleSimpleCredit implements RecommendationRuleSet {
 
     @Override
     public Optional<RecommendationDTO> getRecommendation(String userId) {
-        if (repository.checkRecommendtionSimpleCredit(userId)) {
-            return Optional.of(new RecommendationDTO("ab138afb-f3ba-4a93-b74f-0fcee86d447f",
+        if (repository.checkRecommendationSimpleCredit(userId)) {
+            return Optional.of(new RecommendationDTO("SimpleCredit",
+                    "ab138afb-f3ba-4a93-b74f-0fcee86d447f",
                     "Откройте мир выгодных кредитов с нами!" +
                             "Ищете способ быстро и без лишних хлопот получить нужную сумму? Тогда наш выгодный кредит — именно то, что вам нужно! " +
                             "Мы предлагаем низкие процентные ставки, гибкие условия и индивидуальный подход к каждому клиенту." +

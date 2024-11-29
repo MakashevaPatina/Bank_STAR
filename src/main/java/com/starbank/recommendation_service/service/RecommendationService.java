@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 public class RecommendationService {
@@ -22,6 +23,7 @@ public class RecommendationService {
 
         List<RecommendationDTO> recommendations = ruleSets.stream()
                 .map(rule -> rule.getRecommendation(userId))
+                .map(Optional::get)
                 .collect(Collectors.toList());
         return new RecommendationResponse(recommendations, userId);
     }

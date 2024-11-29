@@ -1,5 +1,7 @@
 package com.starbank.recommendation_service.rules;
 
+import com.starbank.recommendation_service.dto.RecommendationDTO;
+import com.starbank.recommendation_service.repository.RecommendationsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -13,8 +15,9 @@ public class RuleTopSaving implements RecommendationRuleSet {
 
     @Override
     public Optional<RecommendationDTO> getRecommendation(String userId) {
-        if (repository.checkRecommendtionTopSaving(userId)) {
-            return Optional.of(new RecommendationDTO("59efc529-2fff-41af-baff-90ccd7402925",
+        if (repository.checkRecommendationTopSaving(userId)) {
+            return Optional.of(new RecommendationDTO("TopSaving",
+                    "59efc529-2fff-41af-baff-90ccd7402925",
                     "Откройте свою собственную «Копилку» с нашим банком! «Копилка» — это уникальный банковский инструмент," +
                             " который поможет вам легко и удобно накапливать деньги на важные цели. Больше никаких забытых чеков и потерянных квитанций — всё под контролем!" +
                             "Преимущества «Копилки»:" +
