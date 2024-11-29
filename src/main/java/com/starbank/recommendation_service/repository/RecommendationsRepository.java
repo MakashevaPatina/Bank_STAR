@@ -38,8 +38,8 @@ public class RecommendationsRepository {
         return result != null ? result : 0;
     }
 
-    public Recommendation checkRecommendationInvest500(String id) {
-        Recommendation recommendation = null;
+    public boolean checkRecommendationInvest500(String id) {
+
         UUID uuid = UUID.fromString(id);
 
         if (checkDBForProductTypePlusTransactionType(uuid, "DEBIT", "DEPOSIT") +
@@ -49,13 +49,13 @@ public class RecommendationsRepository {
 
                 checkDBForProductTypePlusTransactionType(uuid, "SAVING", "DEPOSIT") > 1000) {
 
-            recommendation = new Recommendation();
+           return true;
         }
-        return recommendation;
+        return false;
     }
 
-    public Recommendation checkRecommendationSimpleCredit(String id) {
-        Recommendation recommendation = null;
+    public boolean checkRecommendationSimpleCredit(String id) {
+
         UUID uuid = UUID.fromString(id);
 
         if (checkDBForProductTypePlusTransactionType(uuid, "DEBIT", "DEPOSIT") +
@@ -67,12 +67,12 @@ public class RecommendationsRepository {
                 checkDBForProductTypePlusTransactionType(uuid, "DEBIT", "DEPOSIT") >
                         checkDBForProductTypePlusTransactionType(uuid, "DEBIT", "WITHDRAW")) {
 
-            recommendation = new Recommendation();
+            return true;
         }
-        return recommendation;
+        return false;
     }
-    public Recommendation checkRecommendationTopSaving(String id) {
-        Recommendation recommendation = null;
+    public boolean checkRecommendationTopSaving(String id) {
+
         UUID uuid = UUID.fromString(id);
 
         if (checkDBProductTypeExcluded(uuid, "CREDIT") > 0 &&
@@ -82,8 +82,8 @@ public class RecommendationsRepository {
 
                 checkDBForProductTypePlusTransactionType(uuid, "DEBIT", "WITHDRAW") > 100_000) {
 
-            recommendation = new Recommendation();
+            return true;
         }
-        return recommendation;
+        return false;
     }
 }
