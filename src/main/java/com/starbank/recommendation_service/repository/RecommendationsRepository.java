@@ -22,7 +22,7 @@ public class RecommendationsRepository {
         return result != null ? result : 0;
     }
 
-    public int checkDBForProductTypePlusTransactionType(UUID user, String productType, String transactionType) {
+    public int getAmountOfTransactionTypeForProductTypeForUser(UUID user, String productType, String transactionType) {
         Integer result = jdbcTemplate.queryForObject(
                 "SELECT amount FROM products p JOIN transactions t ON t.product_id = p.id WHERE user_id = ? AND " +
                         "p.type = ? AND t.type = ?",
@@ -30,7 +30,7 @@ public class RecommendationsRepository {
         return result != null ? result : 0;
     }
 
-    public int checkDBProductTypeExcluded(UUID user, String productType) {
+    public int getAmountOfTransactionsForUserProductTypeExcluded(UUID user, String productType) {
         Integer result = jdbcTemplate.queryForObject(
                 "SELECT amount FROM products p JOIN transactions t ON t.product_id = p.id WHERE user_id = ? AND " +
                         "p.type != ?",
@@ -42,12 +42,12 @@ public class RecommendationsRepository {
 
         UUID uuid = UUID.fromString(id);
 
-        if (checkDBForProductTypePlusTransactionType(uuid, "DEBIT", "DEPOSIT") +
-                checkDBForProductTypePlusTransactionType(uuid, "DEBIT", "WITHDRAW") > 0 &&
+        if (getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "DEPOSIT") +
+                getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "WITHDRAW") > 0 &&
 
-                checkDBProductTypeExcluded(uuid, "INVEST") > 0 &&
+                getAmountOfTransactionsForUserProductTypeExcluded(uuid, "INVEST") > 0 &&
 
-                checkDBForProductTypePlusTransactionType(uuid, "SAVING", "DEPOSIT") > 1000) {
+                getAmountOfTransactionTypeForProductTypeForUser(uuid, "SAVING", "DEPOSIT") > 1000) {
 
            return true;
         }
@@ -58,14 +58,14 @@ public class RecommendationsRepository {
 
         UUID uuid = UUID.fromString(id);
 
-        if (checkDBForProductTypePlusTransactionType(uuid, "DEBIT", "DEPOSIT") +
-                checkDBForProductTypePlusTransactionType(uuid, "DEBIT", "WITHDRAW") > 0 &&
+        if (getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "DEPOSIT") +
+                getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "WITHDRAW") > 0 &&
 
-                (checkDBForProductTypePlusTransactionType(uuid, "DEBIT", "DEPOSIT") >= 50_000 ||
-                        checkDBForProductTypePlusTransactionType(uuid, "SAVING", "DEPOSIT") >= 50_000) &&
+                (getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "DEPOSIT") >= 50_000 ||
+                        getAmountOfTransactionTypeForProductTypeForUser(uuid, "SAVING", "DEPOSIT") >= 50_000) &&
 
-                checkDBForProductTypePlusTransactionType(uuid, "DEBIT", "DEPOSIT") >
-                        checkDBForProductTypePlusTransactionType(uuid, "DEBIT", "WITHDRAW")) {
+                getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "DEPOSIT") >
+                        getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "WITHDRAW")) {
 
             return true;
         }
@@ -75,12 +75,12 @@ public class RecommendationsRepository {
 
         UUID uuid = UUID.fromString(id);
 
-        if (checkDBProductTypeExcluded(uuid, "CREDIT") > 0 &&
+        if (getAmountOfTransactionsForUserProductTypeExcluded(uuid, "CREDIT") > 0 &&
 
-                checkDBForProductTypePlusTransactionType(uuid, "DEBIT", "DEPOSIT") >
-                        checkDBForProductTypePlusTransactionType(uuid, "DEBIT", "WITHDRAW") &&
+                getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "DEPOSIT") >
+                        getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "WITHDRAW") &&
 
-                checkDBForProductTypePlusTransactionType(uuid, "DEBIT", "WITHDRAW") > 100_000) {
+                getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "WITHDRAW") > 100_000) {
 
             return true;
         }
