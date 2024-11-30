@@ -1,5 +1,6 @@
 package com.starbank.recommendation_service.repository;
 
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -15,27 +16,41 @@ public class RecommendationsRepository {
     }
 
     public int getRandomTransactionAmount(UUID user) {
-        Integer result = jdbcTemplate.queryForObject(
-                "SELECT amount FROM transactions t WHERE t.user_id = ? LIMIT 1",
-                Integer.class,
-                user);
-        return result != null ? result : 0;
+        try {
+            Integer result = jdbcTemplate.queryForObject(
+                    "SELECT amount FROM transactions t WHERE t.user_id = ? LIMIT 1",
+                    Integer.class,
+                    user);
+            return result != null ? result : 0;
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     public int getAmountOfTransactionTypeForProductTypeForUser(UUID user, String productType, String transactionType) {
-        Integer result = jdbcTemplate.queryForObject(
-                "SELECT amount FROM products p JOIN transactions t ON t.product_id = p.id WHERE user_id = ? AND " +
-                        "p.type = ? AND t.type = ?",
-                Integer.class, user, productType, transactionType);
-        return result != null ? result : 0;
+        try {
+            Integer result = jdbcTemplate.queryForObject(
+                    "SELECT COALESCE(SUM(amount), 0) FROM products p " +
+                            "JOIN transactions t ON t.product_id = p.id " +
+                            "WHERE user_id = ? AND p.type = ? AND t.type = ?",
+                    Integer.class, user, productType, transactionType);
+            return result != null ? result : 0;
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     public int getAmountOfTransactionsForUserProductTypeExcluded(UUID user, String productType) {
-        Integer result = jdbcTemplate.queryForObject(
-                "SELECT amount FROM products p JOIN transactions t ON t.product_id = p.id WHERE user_id = ? AND " +
-                        "p.type != ?",
-                Integer.class, user, productType);
-        return result != null ? result : 0;
+        try {
+            Integer result = jdbcTemplate.queryForObject(
+                    "SELECT COALESCE(SUM(amount), 0) FROM products p " +
+                            "JOIN transactions t ON t.product_id = p.id " +
+                            "WHERE user_id = ? AND p.type != ?",
+                    Integer.class, user, productType);
+            return result != null ? result : 0;
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     public boolean checkRecommendationInvest500(String id) {
@@ -49,7 +64,7 @@ public class RecommendationsRepository {
 
                 getAmountOfTransactionTypeForProductTypeForUser(uuid, "SAVING", "DEPOSIT") > 1000) {
 
-           return true;
+            return true;
         }
         return false;
     }
@@ -71,6 +86,7 @@ public class RecommendationsRepository {
         }
         return false;
     }
+
     public boolean checkRecommendationTopSaving(String id) {
 
         UUID uuid = UUID.fromString(id);

@@ -23,6 +23,7 @@ public class RecommendationService {
 
         List<RecommendationDTO> recommendations = ruleSets.stream()
                 .map(rule -> rule.getRecommendation(userId))
+                .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
         return new RecommendationResponse(recommendations, userId);
