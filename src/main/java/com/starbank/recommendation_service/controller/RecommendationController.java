@@ -15,7 +15,7 @@ public class RecommendationController {
 
     private final RecommendationService recommendationService;
 
-    public RecommendationController(RecommendationService recommendationService, JdbcTemplate jdbcTemplate) {
+    public RecommendationController(RecommendationService recommendationService) {
         this.recommendationService = recommendationService;
     }
 
