@@ -30,7 +30,7 @@ public class DynamicRuleController {
 
     @DeleteMapping("/delete")
     @Operation(summary = "Удаление правила")
-    public DynamicRule deleteDynamicRule(@PathVariable("id") long id) {
+    public DynamicRule deleteDynamicRule(@RequestParam("id") long id) {
         return service.deleteDynamicRule(id);
     }
 

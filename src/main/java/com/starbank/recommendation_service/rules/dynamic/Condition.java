@@ -1,12 +1,11 @@
 package com.starbank.recommendation_service.rules.dynamic;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import jakarta.persistence.*;
 
 import java.util.List;
-
-import static com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY;
 
 @Entity
 public class Condition {
@@ -18,7 +17,7 @@ public class Condition {
 
     private boolean negate;
 
-    @JsonProperty(access = READ_ONLY)
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "dynamic_rule_id")
     private DynamicRule dynamicRule;

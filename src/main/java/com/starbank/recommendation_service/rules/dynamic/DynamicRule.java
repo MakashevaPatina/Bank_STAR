@@ -1,18 +1,24 @@
 package com.starbank.recommendation_service.rules.dynamic;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.starbank.recommendation_service.dto.RecommendationDTO;
 import jakarta.persistence.*;
 
 import java.util.List;
+
 
 @Entity
 public class DynamicRule {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Long id;
 
     private String productName;
 
     private String productText;
+
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "dynamic_rule_id")
@@ -68,4 +74,6 @@ public class DynamicRule {
                 ", conditions=" + conditions +
                 '}';
     }
+
+
 }

@@ -5,9 +5,11 @@ import com.starbank.recommendation_service.dto.RecommendationDTO;
 import com.starbank.recommendation_service.dto.RecommendationResponse;
 import com.starbank.recommendation_service.repository.DynamicRulesRepository;
 import com.starbank.recommendation_service.rules.RecommendationRuleSet;
+import com.starbank.recommendation_service.rules.dynamic.DynamicRule;
 import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Optional;
@@ -22,12 +24,21 @@ public class DynamicRecommendationService {
     }
 
 
-    /*public RecommendationResponse getRecommendations(String userId) {
-        *//*List<RecommendationDTO> recommendations = dynamicRulesRepository.findAll().stream()
-                .map(rule -> rule.getCondition(userId))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toList());*//*
-       // return new RecommendationResponse(recommendations, userId);
+    /*public Optional<RecommendationDTO> getRecommendation(String userID) {
+        RecommendationDTO recommendationDTO;
+        recommendationDTO = null;
+        List<DynamicRule> rules = dynamicRulesRepository.findAll();
+        for (int i = 0; i < rules.size(); i++) {
+            if (rules.get(i) = true) { //Тут должна быть логика в условии
+                recommendationDTO = new RecommendationDTO(rules.get(i).getProductName(),
+                        rules.get(i).getId().toString(),
+                        rules.get(i).getProductText());
+            }
+        }
+        if (recommendationDTO != null) {
+            return Optional.of(recommendationDTO);
+        } else {
+            return Optional.empty();
+        }
     }*/
 }
