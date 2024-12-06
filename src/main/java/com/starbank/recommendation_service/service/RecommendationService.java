@@ -5,6 +5,7 @@ import com.starbank.recommendation_service.dto.RecommendationResponse;
 import com.starbank.recommendation_service.repository.DynamicRulesRepository;
 import com.starbank.recommendation_service.repository.RecommendationsRepository;
 import com.starbank.recommendation_service.rules.RecommendationRuleSet;
+import com.starbank.recommendation_service.rules.dynamic.Condition;
 import com.starbank.recommendation_service.rules.dynamic.DynamicRule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -38,10 +39,31 @@ public class RecommendationService {
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
+        dynamicRules.stream()
+                .filter(rule -> applyDynamicRule(rule, userId))  // Применяем правило
+                .map(rule -> new RecommendationDTO(rule.getProductName(), rule.getId().toString(), rule.getProductText()))  // Преобразуем динамическое правило в рекомендацию
+                .forEach(recommendations::add);
+
         return new RecommendationResponse(recommendations, userId);
+
     }
 
-    public boolean processQuery(String userId, String queryType, List<String> arguments, boolean negate) {
+    private boolean applyDynamicRule(DynamicRule rule, String userId) {
+
+        for (Condition condition : rule.getConditions()) {
+            boolean conditionMet = processQuery(userId, condition);
+            if (!conditionMet) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean processQuery(String userId, Condition condition) {
+        String queryType = condition.getQuery();
+        List<String> arguments = condition.getArguments();
+        boolean negate = condition.isNegate();
+
         switch (queryType) {
             case "USER_OF":
                 return handleUserOfQuery(userId, arguments, negate);
@@ -57,7 +79,7 @@ public class RecommendationService {
     }
 
     private boolean handleUserOfQuery(String userId, List<String> arguments, boolean negate) {
-        String productType = arguments.get(0).toUpperCase();  // Используем строку вместо перечисления
+        String productType = arguments.get(0).toUpperCase();
 
         String sql = "SELECT COUNT(*) FROM transactions WHERE user_id = ? AND product_type = ?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId, productType);
@@ -68,7 +90,7 @@ public class RecommendationService {
     }
 
     private boolean handleActiveUserOfQuery(String userId, List<String> arguments, boolean negate) {
-        String productType = arguments.get(0).toUpperCase();  // Используем строку вместо перечисления
+        String productType = arguments.get(0).toUpperCase();
 
         String sql = "SELECT COUNT(*) FROM transactions WHERE user_id = ? AND product_type = ? AND transaction_type IN ('DEPOSIT', 'WITHDRAW')";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId, productType);
@@ -79,8 +101,8 @@ public class RecommendationService {
     }
 
     private boolean handleTransactionSumCompareQuery(String userId, List<String> arguments, boolean negate) {
-        String productType = arguments.get(0).toUpperCase();  // Используем строку вместо перечисления
-        String transactionType = arguments.get(1).toUpperCase();  // Используем строку вместо перечисления
+        String productType = arguments.get(0).toUpperCase();
+        String transactionType = arguments.get(1).toUpperCase();
         String comparisonOperator = arguments.get(2);
         int threshold = Integer.parseInt(arguments.get(3));
 
@@ -94,10 +116,10 @@ public class RecommendationService {
 
 
     private boolean handleTransactionSumCompareDepositWithdrawQuery(String userId, List<String> arguments, boolean negate) {
-        String productType = arguments.get(0).toUpperCase();  // Используем строку вместо перечисления
+        String productType = arguments.get(0).toUpperCase();
         String comparisonOperator = arguments.get(1);
 
-        // Получаем суммы для депозитов и снятий по продукту
+
         String depositSql = "SELECT SUM(amount) FROM transactions WHERE user_id = ? AND product_type = ? AND transaction_type = 'DEPOSIT'";
         Integer depositSum = jdbcTemplate.queryForObject(depositSql, Integer.class, userId, productType);
 
