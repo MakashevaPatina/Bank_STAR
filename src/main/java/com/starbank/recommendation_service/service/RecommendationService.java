@@ -2,14 +2,12 @@ package com.starbank.recommendation_service.service;
 
 import com.starbank.recommendation_service.dto.RecommendationDTO;
 import com.starbank.recommendation_service.dto.RecommendationResponse;
-import com.starbank.recommendation_service.dto.Transaction;
 import com.starbank.recommendation_service.repository.DynamicRulesRepository;
 import com.starbank.recommendation_service.repository.RecommendationsRepository;
-import com.starbank.recommendation_service.repository.TransactionRepository;
 import com.starbank.recommendation_service.rules.RecommendationRuleSet;
-import com.starbank.recommendation_service.rules.dynamic.Condition;
 import com.starbank.recommendation_service.rules.dynamic.DynamicRule;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,13 +20,15 @@ public class RecommendationService {
     private final List<RecommendationRuleSet> ruleSets;
     private final DynamicRulesRepository dynamicRulesRepository;
     private final RecommendationsRepository recommendationsRepository;
-    public final TransactionRepository transactionRepository;
+    private final JdbcTemplate jdbcTemplate;
+
     @Autowired
-    public RecommendationService(List<RecommendationRuleSet> ruleSets, DynamicRulesRepository dynamicRulesRepository, RecommendationsRepository recommendationsRepository, TransactionRepository transactionRepository) {
+    public RecommendationService(List<RecommendationRuleSet> ruleSets, DynamicRulesRepository dynamicRulesRepository,
+                                 RecommendationsRepository recommendationsRepository, JdbcTemplate jdbcTemplate) {
         this.ruleSets = ruleSets;
         this.dynamicRulesRepository = dynamicRulesRepository;
         this.recommendationsRepository = recommendationsRepository;
-        this.transactionRepository = transactionRepository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     public RecommendationResponse getRecommendations(String userId) {
@@ -38,25 +38,7 @@ public class RecommendationService {
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
-
-        for (DynamicRule rule : dynamicRules) {
-            boolean isApplicable = checkDynamicRuleConditions(rule, userId);
-
-            if (!isApplicable) {
-                recommendations.add(new RecommendationDTO(rule.getProductName(), rule.getId().toString(), rule.getProductText()));
-            }
-        }
         return new RecommendationResponse(recommendations, userId);
-    }
-
-    private boolean checkDynamicRuleConditions(DynamicRule rule, String userId) {
-        for (Condition condition : rule.getConditions()) {
-            boolean conditionMet = processQuery(userId, condition.getQuery(), condition.getArguments(), condition.isNegate());
-            if (!conditionMet) {
-                return false;
-            }
-        }
-        return true;
     }
 
     public boolean processQuery(String userId, String queryType, List<String> arguments, boolean negate) {
@@ -75,43 +57,54 @@ public class RecommendationService {
     }
 
     private boolean handleUserOfQuery(String userId, List<String> arguments, boolean negate) {
-        Transaction.ProductType productType = Transaction.ProductType.valueOf(arguments.get(0).toUpperCase());
+        String productType = arguments.get(0).toUpperCase();  // Используем строку вместо перечисления
 
-        boolean isUser = transactionRepository.hasTransactionForProductType(userId, productType);
+        String sql = "SELECT COUNT(*) FROM transactions WHERE user_id = ? AND product_type = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId, productType);
+
+        boolean isUser = count != null && count > 0;
 
         return negate ? !isUser : isUser;
     }
 
     private boolean handleActiveUserOfQuery(String userId, List<String> arguments, boolean negate) {
-        Transaction.ProductType productType = Transaction.ProductType.valueOf(arguments.get(0).toUpperCase());
+        String productType = arguments.get(0).toUpperCase();  // Используем строку вместо перечисления
 
-        boolean isActiveUser = transactionRepository.countTransactionsForProductType(userId, productType) >= 5;
+        String sql = "SELECT COUNT(*) FROM transactions WHERE user_id = ? AND product_type = ? AND transaction_type IN ('DEPOSIT', 'WITHDRAW')";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId, productType);
+
+        boolean isActiveUser = count != null && count >= 5;
 
         return negate ? !isActiveUser : isActiveUser;
     }
 
     private boolean handleTransactionSumCompareQuery(String userId, List<String> arguments, boolean negate) {
-        Transaction.ProductType productType = Transaction.ProductType.valueOf(arguments.get(0).toUpperCase());
-        Transaction.TransactionType transactionType = Transaction.TransactionType.valueOf(arguments.get(1).toUpperCase());
+        String productType = arguments.get(0).toUpperCase();  // Используем строку вместо перечисления
+        String transactionType = arguments.get(1).toUpperCase();  // Используем строку вместо перечисления
         String comparisonOperator = arguments.get(2);
         int threshold = Integer.parseInt(arguments.get(3));
 
+        String sql = "SELECT SUM(amount) FROM transactions WHERE user_id = ? AND product_type = ? AND transaction_type = ?";
+        Integer totalTransactionSum = jdbcTemplate.queryForObject(sql, Integer.class, userId, productType, transactionType);
 
-        int totalTransactionSum = transactionRepository.getTransactionSumForProductTypeAndTransactionType(userId, productType, transactionType);
-
-        boolean result = compareSum(totalTransactionSum, threshold, comparisonOperator);
+        boolean result = compareSum(totalTransactionSum != null ? totalTransactionSum : 0, threshold, comparisonOperator);
 
         return negate ? !result : result;
     }
 
+
     private boolean handleTransactionSumCompareDepositWithdrawQuery(String userId, List<String> arguments, boolean negate) {
-        Transaction.ProductType productType = Transaction.ProductType.valueOf(arguments.get(0).toUpperCase());
+        String productType = arguments.get(0).toUpperCase();  // Используем строку вместо перечисления
         String comparisonOperator = arguments.get(1);
 
-        int depositSum = transactionRepository.getTransactionSumForProductTypeAndTransactionType(userId, productType, Transaction.TransactionType.DEPOSIT);
-        int withdrawSum = transactionRepository.getTransactionSumForProductTypeAndTransactionType(userId, productType, Transaction.TransactionType.WITHDRAW);
+        // Получаем суммы для депозитов и снятий по продукту
+        String depositSql = "SELECT SUM(amount) FROM transactions WHERE user_id = ? AND product_type = ? AND transaction_type = 'DEPOSIT'";
+        Integer depositSum = jdbcTemplate.queryForObject(depositSql, Integer.class, userId, productType);
 
-        boolean result = compareSum(depositSum, withdrawSum, comparisonOperator);
+        String withdrawSql = "SELECT SUM(amount) FROM transactions WHERE user_id = ? AND product_type = ? AND transaction_type = 'WITHDRAW'";
+        Integer withdrawSum = jdbcTemplate.queryForObject(withdrawSql, Integer.class, userId, productType);
+
+        boolean result = compareSum(depositSum != null ? depositSum : 0, withdrawSum != null ? withdrawSum : 0, comparisonOperator);
 
         return negate ? !result : result;
     }
