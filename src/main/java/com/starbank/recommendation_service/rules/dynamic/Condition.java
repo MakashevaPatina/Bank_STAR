@@ -7,8 +7,6 @@ import jakarta.persistence.*;
 
 import java.util.List;
 
-import static com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY;
-
 @Entity
 public class Condition {
     @Id

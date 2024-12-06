@@ -1,21 +1,17 @@
 package com.starbank.recommendation_service.rules.dynamic;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 import java.util.List;
 
-import static com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY;
-
 @Entity
 public class DynamicRule {
-    @JsonIgnore
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String productName;
+
     private String productText;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
