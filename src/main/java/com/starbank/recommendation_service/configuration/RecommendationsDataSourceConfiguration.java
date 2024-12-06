@@ -1,6 +1,7 @@
 package com.starbank.recommendation_service.configuration;
 
 import com.zaxxer.hikari.HikariDataSource;
+import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -25,5 +26,21 @@ public class RecommendationsDataSourceConfiguration {
             @Qualifier("recommendationsDataSource") DataSource dataSource
     ) {
         return new JdbcTemplate(dataSource);
+    }
+
+    @Bean
+    public GroupedOpenApi allGroups() {
+        return GroupedOpenApi.builder().
+                group("Все контроллеры").
+                pathsToMatch("/**").
+                build();
+    }
+
+    @Bean
+    public GroupedOpenApi ruleGroup() {
+        return GroupedOpenApi.builder().
+                group("Контроллер правил").
+                pathsToMatch("/rule/**").
+                build();
     }
 }
