@@ -1,7 +1,5 @@
 package com.starbank.recommendation_service.controller;
 
-import com.starbank.recommendation_service.repository.DynamicRulesRepository;
-import com.starbank.recommendation_service.rules.dynamic.Condition;
 import com.starbank.recommendation_service.rules.dynamic.DynamicRule;
 import com.starbank.recommendation_service.service.DynamicRuleService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,7 +26,7 @@ public class DynamicRuleController {
         return service.createDynamicRule(dynamicRule);
     }
 
-    @DeleteMapping("/delete")
+    @DeleteMapping("/delete/{id}")
     @Operation(summary = "Удаление правила")
     public DynamicRule deleteDynamicRule(@PathVariable("id") long id) {
         return service.deleteDynamicRule(id);

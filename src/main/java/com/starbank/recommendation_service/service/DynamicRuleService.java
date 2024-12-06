@@ -1,11 +1,8 @@
 package com.starbank.recommendation_service.service;
 
-
 import com.starbank.recommendation_service.exception.DynamicRuleNotFoundException;
 import com.starbank.recommendation_service.repository.DynamicRulesRepository;
-import com.starbank.recommendation_service.rules.dynamic.Condition;
 import com.starbank.recommendation_service.rules.dynamic.DynamicRule;
-import jakarta.persistence.OneToMany;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -35,7 +32,7 @@ public class DynamicRuleService {
             return ruleForDelete;
         } catch (DynamicRuleNotFoundException e) {
             logger.error("Правило с id:{} не найдено", id, e);
-           throw e;
+            throw e;
         }
 
     }
