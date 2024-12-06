@@ -7,6 +7,7 @@ import com.starbank.recommendation_service.repository.DynamicRulesRepository;
 import com.starbank.recommendation_service.repository.RecommendationsRepository;
 import com.starbank.recommendation_service.repository.TransactionRepository;
 import com.starbank.recommendation_service.rules.RecommendationRuleSet;
+import com.starbank.recommendation_service.rules.dynamic.Condition;
 import com.starbank.recommendation_service.rules.dynamic.DynamicRule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -37,7 +38,25 @@ public class RecommendationService {
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
+
+        for (DynamicRule rule : dynamicRules) {
+            boolean isApplicable = checkDynamicRuleConditions(rule, userId);
+
+            if (!isApplicable) {
+                recommendations.add(new RecommendationDTO(rule.getProductName(), rule.getId().toString(), rule.getProductText()));
+            }
+        }
         return new RecommendationResponse(recommendations, userId);
+    }
+
+    private boolean checkDynamicRuleConditions(DynamicRule rule, String userId) {
+        for (Condition condition : rule.getConditions()) {
+            boolean conditionMet = processQuery(userId, condition.getQuery(), condition.getArguments(), condition.isNegate());
+            if (!conditionMet) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public boolean processQuery(String userId, String queryType, List<String> arguments, boolean negate) {
