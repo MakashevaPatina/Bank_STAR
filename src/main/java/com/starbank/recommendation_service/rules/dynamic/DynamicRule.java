@@ -3,6 +3,7 @@ package com.starbank.recommendation_service.rules.dynamic;
 import jakarta.persistence.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 public class DynamicRule {
@@ -14,14 +15,21 @@ public class DynamicRule {
 
     private String productText;
 
+
+    private UUID productId;
+
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "dynamic_rule_id")
     private List<Condition> conditions;
 
-    public DynamicRule(String productName, String productText, List<Condition> conditions) {
+    @Version
+    private Long version;
+
+    public DynamicRule(String productName, String productText, List<Condition> conditions, UUID productId) {
         this.productName = productName;
         this.productText = productText;
         this.conditions = conditions;
+        this.productId = productId;
     }
 
     public DynamicRule() {
@@ -59,11 +67,26 @@ public class DynamicRule {
         this.conditions = conditions;
     }
 
+    public UUID getProductId() {
+        return productId;
+    }
+
+    public void setProductId(UUID productId) {
+        this.productId = productId;
+    }
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
+    }
     @Override
     public String toString() {
         return "DynamicRule{" +
                 "id=" + id +
                 ", productName='" + productName + '\'' +
+                ", productId='" + productId + '\'' +
                 ", productText='" + productText + '\'' +
                 ", conditions=" + conditions +
                 '}';

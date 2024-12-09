@@ -7,6 +7,8 @@ import com.starbank.recommendation_service.repository.RecommendationsRepository;
 import com.starbank.recommendation_service.rules.RecommendationRuleSet;
 import com.starbank.recommendation_service.rules.dynamic.Condition;
 import com.starbank.recommendation_service.rules.dynamic.DynamicRule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -22,7 +24,7 @@ public class RecommendationService {
     private final DynamicRulesRepository dynamicRulesRepository;
     private final RecommendationsRepository recommendationsRepository;
     private final JdbcTemplate jdbcTemplate;
-
+    Logger logger = LoggerFactory.getLogger(RecommendationService.class);
     @Autowired
     public RecommendationService(List<RecommendationRuleSet> ruleSets, DynamicRulesRepository dynamicRulesRepository,
                                  RecommendationsRepository recommendationsRepository, JdbcTemplate jdbcTemplate) {
@@ -40,8 +42,8 @@ public class RecommendationService {
                 .map(Optional::get)
                 .collect(Collectors.toList());
         dynamicRules.stream()
-                .filter(rule -> applyDynamicRule(rule, userId))  // Применяем правило
-                .map(rule -> new RecommendationDTO(rule.getProductName(), rule.getId().toString(), rule.getProductText()))  // Преобразуем динамическое правило в рекомендацию
+                .filter(rule -> applyDynamicRule(rule, userId))
+                .map(rule -> new RecommendationDTO(rule.getProductName(), rule.getId().toString(), rule.getProductText()))
                 .forEach(recommendations::add);
 
         return new RecommendationResponse(recommendations, userId);
@@ -49,7 +51,10 @@ public class RecommendationService {
     }
 
     private boolean applyDynamicRule(DynamicRule rule, String userId) {
-
+        if (rule == null) {
+            logger.warn("Dynamic rule is null for user: {}", userId);
+            return false;
+        }
         for (Condition condition : rule.getConditions()) {
             boolean conditionMet = processQuery(userId, condition);
             if (!conditionMet) {
@@ -63,7 +68,7 @@ public class RecommendationService {
         String queryType = condition.getQuery();
         List<String> arguments = condition.getArguments();
         boolean negate = condition.isNegate();
-
+        logger.debug("Processing query: {} with arguments: {}", queryType, arguments);
         switch (queryType) {
             case "USER_OF":
                 return handleUserOfQuery(userId, arguments, negate);
@@ -74,29 +79,24 @@ public class RecommendationService {
             case "TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW":
                 return handleTransactionSumCompareDepositWithdrawQuery(userId, arguments, negate);
             default:
+                logger.error("Unknown query type: {}", queryType);
                 throw new IllegalArgumentException("Unknown query type: " + queryType);
         }
     }
 
     private boolean handleUserOfQuery(String userId, List<String> arguments, boolean negate) {
         String productType = arguments.get(0).toUpperCase();
-
-        String sql = "SELECT COUNT(*) FROM transactions WHERE user_id = ? AND product_type = ?";
+        String sql = "SELECT COUNT(*) FROM transactions WHERE user_id = ? AND product_id = (SELECT id FROM products WHERE type = ? LIMIT 1)";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId, productType);
-
         boolean isUser = count != null && count > 0;
-
         return negate ? !isUser : isUser;
     }
 
     private boolean handleActiveUserOfQuery(String userId, List<String> arguments, boolean negate) {
         String productType = arguments.get(0).toUpperCase();
-
-        String sql = "SELECT COUNT(*) FROM transactions WHERE user_id = ? AND product_type = ? AND transaction_type IN ('DEPOSIT', 'WITHDRAW')";
+        String sql = "SELECT COUNT(*) FROM transactions WHERE user_id = ? AND product_id = (SELECT id FROM products WHERE type = ? LIMIT 1) AND type IN ('DEPOSIT', 'WITHDRAW')";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId, productType);
-
         boolean isActiveUser = count != null && count >= 5;
-
         return negate ? !isActiveUser : isActiveUser;
     }
 
@@ -106,31 +106,28 @@ public class RecommendationService {
         String comparisonOperator = arguments.get(2);
         int threshold = Integer.parseInt(arguments.get(3));
 
-        String sql = "SELECT SUM(amount) FROM transactions WHERE user_id = ? AND product_type = ? AND transaction_type = ?";
+        String sql = "SELECT SUM(amount) FROM transactions WHERE user_id = ? AND product_id = (SELECT id FROM products WHERE type = ? LIMIT 1) AND type = ?";
         Integer totalTransactionSum = jdbcTemplate.queryForObject(sql, Integer.class, userId, productType, transactionType);
 
-        boolean result = compareSum(totalTransactionSum != null ? totalTransactionSum : 0, threshold, comparisonOperator);
 
+        boolean result = compareSum(totalTransactionSum != null ? totalTransactionSum : 0, threshold, comparisonOperator);
         return negate ? !result : result;
     }
-
 
     private boolean handleTransactionSumCompareDepositWithdrawQuery(String userId, List<String> arguments, boolean negate) {
         String productType = arguments.get(0).toUpperCase();
         String comparisonOperator = arguments.get(1);
 
-
-        String depositSql = "SELECT SUM(amount) FROM transactions WHERE user_id = ? AND product_type = ? AND transaction_type = 'DEPOSIT'";
+        String depositSql = "SELECT SUM(amount) FROM transactions WHERE user_id = ? AND product_id = (SELECT id FROM products WHERE type = ? LIMIT 1) AND type = 'DEPOSIT'";
         Integer depositSum = jdbcTemplate.queryForObject(depositSql, Integer.class, userId, productType);
 
-        String withdrawSql = "SELECT SUM(amount) FROM transactions WHERE user_id = ? AND product_type = ? AND transaction_type = 'WITHDRAW'";
+        String withdrawSql = "SELECT SUM(amount) FROM transactions WHERE user_id = ? AND product_id = (SELECT id FROM products WHERE type = ? LIMIT 1) AND type = 'WITHDRAW'";
         Integer withdrawSum = jdbcTemplate.queryForObject(withdrawSql, Integer.class, userId, productType);
 
-        boolean result = compareSum(depositSum != null ? depositSum : 0, withdrawSum != null ? withdrawSum : 0, comparisonOperator);
 
+        boolean result = compareSum(depositSum != null ? depositSum : 0, withdrawSum != null ? withdrawSum : 0, comparisonOperator);
         return negate ? !result : result;
     }
-
     private boolean compareSum(int sum1, int sum2, String comparisonOperator) {
         switch (comparisonOperator) {
             case ">":
