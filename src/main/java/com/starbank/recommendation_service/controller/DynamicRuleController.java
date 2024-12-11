@@ -23,6 +23,7 @@ public class DynamicRuleController {
     @Operation(summary = "Создание правила",
             description = "Id проставляется из репозитория")
     public DynamicRule createDynamicRule(@RequestBody DynamicRule dynamicRule) {
+
         return service.createDynamicRule(dynamicRule);
     }
 

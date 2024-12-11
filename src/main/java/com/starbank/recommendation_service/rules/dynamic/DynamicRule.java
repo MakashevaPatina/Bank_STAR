@@ -1,5 +1,7 @@
 package com.starbank.recommendation_service.rules.dynamic;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 import java.util.List;
@@ -7,6 +9,7 @@ import java.util.UUID;
 
 @Entity
 public class DynamicRule {
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
