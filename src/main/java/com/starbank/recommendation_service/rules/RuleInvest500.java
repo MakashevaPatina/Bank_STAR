@@ -2,6 +2,7 @@ package com.starbank.recommendation_service.rules;
 
 import com.starbank.recommendation_service.dto.RecommendationDTO;
 import com.starbank.recommendation_service.repository.RecommendationsRepository;
+import com.starbank.recommendation_service.service.RecommendationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -10,12 +11,15 @@ import java.util.Optional;
 @Component
 public class RuleInvest500 implements RecommendationRuleSet {
 
-    @Autowired
-    RecommendationsRepository repository;
+    private final RecommendationChecker recommendationChecker;
+
+    public RuleInvest500(RecommendationChecker recommendationChecker) {
+        this.recommendationChecker = recommendationChecker;
+    }
 
     @Override
     public Optional<RecommendationDTO> getRecommendation(String userId) {
-        if (repository.checkRecommendationInvest500(userId)) {
+        if (recommendationChecker.checkRecommendationInvest500(userId)) {
             return Optional.of(new RecommendationDTO("Invest500",
                     "147f6a0f-3b91-413b-ab99-87f081d60d5a",
                     "Откройте свой путь к успеху с индивидуальным инвестиционным счетом (ИИС) от нашего банка! " +

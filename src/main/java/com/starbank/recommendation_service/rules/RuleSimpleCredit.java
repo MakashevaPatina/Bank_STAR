@@ -1,7 +1,9 @@
 package com.starbank.recommendation_service.rules;
 
 import com.starbank.recommendation_service.dto.RecommendationDTO;
+import com.starbank.recommendation_service.dto.RecommendationResponse;
 import com.starbank.recommendation_service.repository.RecommendationsRepository;
+import com.starbank.recommendation_service.service.RecommendationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -10,12 +12,16 @@ import java.util.Optional;
 @Component
 public class RuleSimpleCredit implements RecommendationRuleSet {
 
-    @Autowired
-    RecommendationsRepository repository;
+    private final RecommendationChecker recommendationChecker;
+
+    public RuleSimpleCredit(RecommendationChecker recommendationChecker) {
+        this.recommendationChecker = recommendationChecker;
+    }
+
 
     @Override
     public Optional<RecommendationDTO> getRecommendation(String userId) {
-        if (repository.checkRecommendationSimpleCredit(userId)) {
+        if (recommendationChecker.checkRecommendationSimpleCredit(userId)) {
             return Optional.of(new RecommendationDTO("SimpleCredit",
                     "ab138afb-f3ba-4a93-b74f-0fcee86d447f",
                     "Откройте мир выгодных кредитов с нами!" +

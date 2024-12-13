@@ -14,6 +14,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.Optional;
 
@@ -24,7 +25,8 @@ public class RecommendationService {
     private final DynamicRulesRepository dynamicRulesRepository;
     private final RecommendationsRepository recommendationsRepository;
     private final JdbcTemplate jdbcTemplate;
-    Logger logger = LoggerFactory.getLogger(RecommendationService.class);
+    private final Logger logger = LoggerFactory.getLogger(RecommendationService.class);
+
     @Autowired
     public RecommendationService(List<RecommendationRuleSet> ruleSets, DynamicRulesRepository dynamicRulesRepository,
                                  RecommendationsRepository recommendationsRepository, JdbcTemplate jdbcTemplate) {
@@ -86,17 +88,15 @@ public class RecommendationService {
 
     private boolean handleUserOfQuery(String userId, List<String> arguments, boolean negate) {
         String productType = arguments.get(0).toUpperCase();
-        String sql = "SELECT COUNT(*) FROM transactions WHERE user_id = ? AND product_id = (SELECT id FROM products WHERE type = ? LIMIT 1)";
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId, productType);
-        boolean isUser = count != null && count > 0;
+        int count = recommendationsRepository.getTransactionCountForProductType(userId, productType);
+        boolean isUser = count > 0;
         return negate ? !isUser : isUser;
     }
 
     private boolean handleActiveUserOfQuery(String userId, List<String> arguments, boolean negate) {
         String productType = arguments.get(0).toUpperCase();
-        String sql = "SELECT COUNT(*) FROM transactions WHERE user_id = ? AND product_id = (SELECT id FROM products WHERE type = ? LIMIT 1) AND type IN ('DEPOSIT', 'WITHDRAW')";
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId, productType);
-        boolean isActiveUser = count != null && count >= 5;
+        int count = recommendationsRepository.getActiveTransactionCountForProductType(userId, productType);
+        boolean isActiveUser = count >= 5;
         return negate ? !isActiveUser : isActiveUser;
     }
 
@@ -106,11 +106,9 @@ public class RecommendationService {
         String comparisonOperator = arguments.get(2);
         int threshold = Integer.parseInt(arguments.get(3));
 
-        String sql = "SELECT SUM(amount) FROM transactions WHERE user_id = ? AND product_id = (SELECT id FROM products WHERE type = ? LIMIT 1) AND type = ?";
-        Integer totalTransactionSum = jdbcTemplate.queryForObject(sql, Integer.class, userId, productType, transactionType);
+        int totalTransactionSum = recommendationsRepository.getTransactionSum(userId, productType, transactionType);
 
-
-        boolean result = compareSum(totalTransactionSum != null ? totalTransactionSum : 0, threshold, comparisonOperator);
+        boolean result = compareSum(totalTransactionSum, threshold, comparisonOperator);
         return negate ? !result : result;
     }
 
@@ -118,16 +116,13 @@ public class RecommendationService {
         String productType = arguments.get(0).toUpperCase();
         String comparisonOperator = arguments.get(1);
 
-        String depositSql = "SELECT SUM(amount) FROM transactions WHERE user_id = ? AND product_id = (SELECT id FROM products WHERE type = ? LIMIT 1) AND type = 'DEPOSIT'";
-        Integer depositSum = jdbcTemplate.queryForObject(depositSql, Integer.class, userId, productType);
+        int depositSum = recommendationsRepository.getTransactionSum(userId, productType, "DEPOSIT");
+        int withdrawSum = recommendationsRepository.getTransactionSum(userId, productType, "WITHDRAW");
 
-        String withdrawSql = "SELECT SUM(amount) FROM transactions WHERE user_id = ? AND product_id = (SELECT id FROM products WHERE type = ? LIMIT 1) AND type = 'WITHDRAW'";
-        Integer withdrawSum = jdbcTemplate.queryForObject(withdrawSql, Integer.class, userId, productType);
-
-
-        boolean result = compareSum(depositSum != null ? depositSum : 0, withdrawSum != null ? withdrawSum : 0, comparisonOperator);
+        boolean result = compareSum(depositSum, withdrawSum, comparisonOperator);
         return negate ? !result : result;
     }
+
     private boolean compareSum(int sum1, int sum2, String comparisonOperator) {
         switch (comparisonOperator) {
             case ">":

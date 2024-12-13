@@ -11,7 +11,7 @@ import java.util.List;
 
 @Service
 public class DynamicRuleService {
-    Logger logger = LoggerFactory.getLogger(DynamicRule.class);
+    private final Logger logger = LoggerFactory.getLogger(DynamicRule.class);
 
     private final DynamicRulesRepository repository;
 

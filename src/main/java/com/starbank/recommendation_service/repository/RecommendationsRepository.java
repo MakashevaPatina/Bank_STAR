@@ -17,7 +17,9 @@ public class RecommendationsRepository {
 
     private final Cache<CacheKey, Integer> transactionTypeProductTypeCache;
     private final Cache<CacheKey, Integer> transactionProductTypeExcludedCache;
-
+    private final Cache<CacheKey, Integer> transactionCountForProductTypeCache;
+    private final Cache<CacheKey, Integer> activeTransactionCountCache;
+    private final Cache<CacheKey, Integer> transactionSumCache;
     public RecommendationsRepository(@Qualifier("recommendationsJdbcTemplate") JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
 
@@ -28,6 +30,18 @@ public class RecommendationsRepository {
         this.transactionProductTypeExcludedCache = Caffeine.newBuilder()
                 .expireAfterWrite(24, TimeUnit.HOURS)
                 .build();
+
+        this.transactionCountForProductTypeCache = Caffeine.newBuilder()
+                .expireAfterWrite(24, TimeUnit.HOURS)
+                .build();
+
+        this.activeTransactionCountCache = Caffeine.newBuilder()
+                .expireAfterWrite(24, TimeUnit.HOURS)
+                .build();
+        this.transactionSumCache = Caffeine.newBuilder()
+                .expireAfterWrite(24, TimeUnit.HOURS)
+                .build();
+
     }
 
     public int getRandomTransactionAmount(UUID user) {
@@ -55,14 +69,9 @@ public class RecommendationsRepository {
                             "WHERE user_id = ? AND p.type = ? AND t.type = ?",
                     Integer.class, user, productType, transactionType);
 
-            if (result != null) {
-                transactionTypeProductTypeCache.put(cacheKey, result);
-            } else {
-                transactionTypeProductTypeCache.put(cacheKey, 0);
-            }
+            transactionTypeProductTypeCache.put(cacheKey, result != null ? result : 0);
             return result != null ? result : 0;
-        } catch (
-                Exception e) {
+        } catch (Exception e) {
             return 0;
         }
     }
@@ -79,67 +88,64 @@ public class RecommendationsRepository {
                             "JOIN transactions t ON t.product_id = p.id " +
                             "WHERE user_id = ? AND p.type != ?",
                     Integer.class, user, productType);
-            if (result != null) {
-                transactionProductTypeExcludedCache.put(cacheKey, result);
-            } else {
-                transactionProductTypeExcludedCache.put(cacheKey, 0); // Если null, кешируем 0
-            }
-
+            transactionProductTypeExcludedCache.put(cacheKey, result != null ? result : 0);
             return result != null ? result : 0;
         } catch (Exception e) {
             return 0;
         }
     }
 
-    public boolean checkRecommendationInvest500(String id) {
-
-        UUID uuid = UUID.fromString(id);
-
-        if (getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "DEPOSIT") +
-                getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "WITHDRAW") > 0 &&
-
-                getAmountOfTransactionsForUserProductTypeExcluded(uuid, "INVEST") > 0 &&
-
-                getAmountOfTransactionTypeForProductTypeForUser(uuid, "SAVING", "DEPOSIT") > 1000) {
-
-            return true;
+    public int getTransactionCountForProductType(String userId, String productType) {
+        CacheKey cacheKey = new CacheKey(UUID.fromString(userId), productType, null);
+        Integer cachedResult = transactionCountForProductTypeCache.getIfPresent(cacheKey);
+        if (cachedResult != null) {
+            return cachedResult;
         }
-        return false;
+        try {
+            String sql = "SELECT COUNT(*) FROM transactions WHERE user_id = ? AND product_id = (SELECT id FROM products WHERE type = ? LIMIT 1)";
+            Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId, productType);
+            int result = count != null ? count : 0;
+            transactionCountForProductTypeCache.put(cacheKey, result);
+            return result;
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
-    public boolean checkRecommendationSimpleCredit(String id) {
-
-        UUID uuid = UUID.fromString(id);
-
-        if (getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "DEPOSIT") +
-                getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "WITHDRAW") > 0 &&
-
-                (getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "DEPOSIT") >= 50_000 ||
-                        getAmountOfTransactionTypeForProductTypeForUser(uuid, "SAVING", "DEPOSIT") >= 50_000) &&
-
-                getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "DEPOSIT") >
-                        getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "WITHDRAW")) {
-
-            return true;
+    public int getActiveTransactionCountForProductType(String userId, String productType) {
+        CacheKey cacheKey = new CacheKey(UUID.fromString(userId), productType, "ACTIVE");
+        Integer cachedResult = activeTransactionCountCache.getIfPresent(cacheKey);
+        if (cachedResult != null) {
+            return cachedResult;
         }
-        return false;
+        try {
+            String sql = "SELECT COUNT(*) FROM transactions WHERE user_id = ? AND product_id = (SELECT id FROM products WHERE type = ? LIMIT 1) AND type IN ('DEPOSIT', 'WITHDRAW')";
+            Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId, productType);
+            int result = count != null ? count : 0;
+            activeTransactionCountCache.put(cacheKey, result);
+            return result;
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
-    public boolean checkRecommendationTopSaving(String id) {
-
-        UUID uuid = UUID.fromString(id);
-
-        if (getAmountOfTransactionsForUserProductTypeExcluded(uuid, "CREDIT") > 0 &&
-
-                getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "DEPOSIT") >
-                        getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "WITHDRAW") &&
-
-                getAmountOfTransactionTypeForProductTypeForUser(uuid, "DEBIT", "WITHDRAW") > 100_000) {
-
-            return true;
+    public int getTransactionSum(String userId, String productType, String transactionType) {
+        CacheKey cacheKey = new CacheKey(UUID.fromString(userId), productType, transactionType);
+        Integer cachedResult = transactionSumCache.getIfPresent(cacheKey);
+        if (cachedResult != null) {
+            return cachedResult;
         }
-        return false;
+        try {
+            String sql = "SELECT SUM(amount) FROM transactions WHERE user_id = ? AND product_id = (SELECT id FROM products WHERE type = ? LIMIT 1) AND type = ?";
+            Integer sum = jdbcTemplate.queryForObject(sql, Integer.class, userId, productType, transactionType);
+            int result = sum != null ? sum : 0;
+            transactionSumCache.put(cacheKey, result);
+            return result;
+        } catch (Exception e) {
+            return 0;
+        }
     }
+
 
     private static class CacheKey {
         private final UUID user;
