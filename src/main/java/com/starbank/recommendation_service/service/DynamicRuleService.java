@@ -40,6 +40,4 @@ public class DynamicRuleService {
     public List<DynamicRule> findAll() {
         return repository.findAll();
     }
-
-
 }
