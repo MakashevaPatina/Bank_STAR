@@ -27,33 +27,43 @@ public class CommandRecommendation implements CommandHandler {
 
     @Override
     public void handle(Update update) {
-        Long chatID = update.message().chat().id();
-
-        String clientId = update.message().text().substring(update.message().text().indexOf(" ") + 1);
-
-        String clientFullName = null;
         try {
-            clientFullName = jdbcTemplate.queryForObject(
+            Long chatID = update.message().chat().id();
+            String clientId = update.message().text().substring(update.message().text().indexOf(" ") + 1);
+            String clientFullName = jdbcTemplate.queryForObject(
                     "SELECT first_name FROM users WHERE id = ?",
                     String.class,
                     clientId
             );
-            clientFullName = clientFullName + jdbcTemplate.queryForObject(
-                    "SELECT last_name FROM users WHERE id = ?",
-                    String.class,
-                    clientId
-            );
-        } catch (ClientNotFoundException e) {
-            throw e;
+
+            try {
+                clientFullName = jdbcTemplate.queryForObject(
+                        "SELECT first_name FROM users WHERE id = ?",
+                        String.class,
+                        clientId
+                );
+                clientFullName = clientFullName + jdbcTemplate.queryForObject(
+                        "SELECT last_name FROM users WHERE id = ?",
+                        String.class,
+                        clientId
+                );
+            } catch (ClientNotFoundException e) {
+                throw e;
+            }
+
+            RecommendationResponse recommendationResponse = recommendationService.getRecommendations(clientId);
+            String text = "Рекомендации для клиента " + clientFullName + recommendationResponse;
+            SendMessage sendMessage = new SendMessage(chatID, text);
+
+            telegramBot.execute(sendMessage);
+            logger.info("Sent message: {}", text);
+            logger.info("User state set to DEFAULT for chatID: {}", chatID);
+
+        } catch (Exception e) {
+            logger.error("Error handling recommendation: ", e);
+            SendMessage sendMessage = new SendMessage(update.message().chat().id(), "Произошла ошибка при обработке запроса. Попробуйте позже.");
+            telegramBot.execute(sendMessage);
         }
-
-        RecommendationResponse recommendationResponse = recommendationService.getRecommendations(clientId);
-        String text = "Рекомендации для клиента " + clientFullName + recommendationResponse;
-        SendMessage sendMessage = new SendMessage(chatID, text);
-
-        telegramBot.execute(sendMessage);
-        logger.info("Sent message: {}", text);
-        logger.info("User state set to DEFAULT for chatID: {}", chatID);
     }
 
     @Override
