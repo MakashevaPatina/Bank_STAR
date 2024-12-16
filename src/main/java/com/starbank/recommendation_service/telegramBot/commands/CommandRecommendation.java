@@ -65,10 +65,7 @@ public class CommandRecommendation implements CommandHandler {
             RecommendationResponse recommendationResponse = recommendationService.getRecommendations(clientId);
             String recommendations = null;
             for (RecommendationDTO recommendation : recommendationResponse.getRecommendations()) {
-                recommendations = recommendation.getName();
-                recommendations = recommendation + "\n";
-                recommendations = recommendation.getText();
-                recommendations = recommendation + "\n";
+                recommendations = recommendation.getName() + "\n" + recommendation.getText() + "\n";
             }
 
             String text = String.format("Здравствуйте %s.\nНовые продукты для вас: %s ", clientFullName, recommendations);
