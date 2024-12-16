@@ -43,7 +43,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             logger.info("Processing update: {}", update);
 
             if (update.message() != null && update.message().text() != null
-                    && update.message().text().contains("/recommendation")) {
+                    && update.message().text().contains("/recommend")) {
                 commandRecommendation.handle(update);
             } else if (update.message() != null && update.message().text() != null) {
                 commandService.handleCommand(update);
