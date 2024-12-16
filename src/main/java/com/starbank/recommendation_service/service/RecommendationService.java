@@ -25,16 +25,18 @@ public class RecommendationService {
     private final DynamicRulesRepository dynamicRulesRepository;
     private final RecommendationsRepository recommendationsRepository;
     private final JdbcTemplate jdbcTemplate;
+    private final RuleStatService ruleStatService;
     private final Logger logger = LoggerFactory.getLogger(RecommendationService.class);
 
     @Autowired
-    public RecommendationService(List<RecommendationRuleSet> ruleSets, DynamicRulesRepository dynamicRulesRepository,
-                                 RecommendationsRepository recommendationsRepository, JdbcTemplate jdbcTemplate) {
+    public RecommendationService(List<RecommendationRuleSet> ruleSets, DynamicRulesRepository dynamicRulesRepository, RecommendationsRepository recommendationsRepository, JdbcTemplate jdbcTemplate, RuleStatService ruleStatService) {
         this.ruleSets = ruleSets;
         this.dynamicRulesRepository = dynamicRulesRepository;
         this.recommendationsRepository = recommendationsRepository;
         this.jdbcTemplate = jdbcTemplate;
+        this.ruleStatService = ruleStatService;
     }
+
 
     public RecommendationResponse getRecommendations(String userId) {
         List<DynamicRule> dynamicRules = dynamicRulesRepository.findAll();
@@ -43,6 +45,7 @@ public class RecommendationService {
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
+
         dynamicRules.stream()
                 .filter(rule -> applyDynamicRule(rule, userId))
                 .map(rule -> new RecommendationDTO(rule.getProductName(), rule.getId().toString(), rule.getProductText()))
@@ -63,6 +66,7 @@ public class RecommendationService {
                 return false;
             }
         }
+        ruleStatService.incrementRuleStat(rule.getId().toString());
         return true;
     }
 
