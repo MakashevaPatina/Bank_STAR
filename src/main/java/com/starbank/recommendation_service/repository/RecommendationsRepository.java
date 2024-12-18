@@ -20,6 +20,7 @@ public class RecommendationsRepository {
     private final Cache<CacheKey, Integer> transactionCountForProductTypeCache;
     private final Cache<CacheKey, Integer> activeTransactionCountCache;
     private final Cache<CacheKey, Integer> transactionSumCache;
+
     public RecommendationsRepository(@Qualifier("recommendationsJdbcTemplate") JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
 
@@ -144,6 +145,14 @@ public class RecommendationsRepository {
         } catch (Exception e) {
             return 0;
         }
+    }
+
+    public void clearAllCaches() {
+        transactionTypeProductTypeCache.invalidateAll();
+        transactionProductTypeExcludedCache.invalidateAll();
+        transactionCountForProductTypeCache.invalidateAll();
+        activeTransactionCountCache.invalidateAll();
+        transactionSumCache.invalidateAll();
     }
 
 
