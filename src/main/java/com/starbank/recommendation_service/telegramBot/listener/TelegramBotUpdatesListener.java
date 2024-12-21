@@ -38,20 +38,21 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     @Override
     public int process(List<Update> updates) {
         updates.forEach(update -> {
-            Long chatID = update.message().chat().id();
+            if (update.message() != null) {
+                Long chatID = update.message().chat().id();
+                logger.info("Processing update: {}", update);
 
-            logger.info("Processing update: {}", update);
-
-            if (update.message() != null && update.message().text() != null
-                    && update.message().text().contains("/recommend")) {
-                commandRecommendation.handle(update);
-            } else if (update.message() != null && update.message().text() != null) {
-                commandService.handleCommand(update);
+                if (update.message().text() != null && update.message().text().contains("/recommend")) {
+                    commandRecommendation.handle(update);
+                } else if (update.message().text() != null) {
+                    commandService.handleCommand(update);
+                } else {
+                    logger.warn("Received update without text message: {}", update);
+                }
             } else {
-                logger.warn("Received update without text message: {}", update);
+                logger.warn("Received update without message: {}", update);
             }
         });
         return UpdatesListener.CONFIRMED_UPDATES_ALL;
     }
 }
-
