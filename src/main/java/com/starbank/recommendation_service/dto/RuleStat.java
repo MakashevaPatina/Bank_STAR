@@ -15,7 +15,8 @@ public class RuleStat {
     @Column(name = "count")
     private Integer count;
 
-    public RuleStat() {}
+    public RuleStat() {
+    }
 
     public RuleStat(String ruleId, int count) {
         this.ruleId = ruleId;

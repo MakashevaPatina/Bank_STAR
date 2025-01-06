@@ -4,7 +4,6 @@ package com.starbank.recommendation_service.repository;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 

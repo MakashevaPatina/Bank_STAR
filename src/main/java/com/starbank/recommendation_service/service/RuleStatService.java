@@ -10,7 +10,7 @@ import java.util.List;
 @Service
 public class RuleStatService {
 
-@Autowired
+    @Autowired
     private RuleStatRepository ruleStatRepository;
 
     public void incrementRuleStat(String ruleId) {
@@ -27,7 +27,7 @@ public class RuleStatService {
     public List<RuleStat> getAllStats() {
         List<RuleStat> ruleStats = ruleStatRepository.findAll();
 
-        for (RuleStat stat: ruleStats) {
+        for (RuleStat stat : ruleStats) {
             if (stat.getCount() == null) {
                 stat.setCount(0);
             }

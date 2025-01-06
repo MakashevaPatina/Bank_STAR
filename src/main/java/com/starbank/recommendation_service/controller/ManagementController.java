@@ -1,4 +1,5 @@
 package com.starbank.recommendation_service.controller;
+
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -6,6 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class ManagementController {
     private final BuildProperties buildProperties;
+
     public ManagementController(BuildProperties buildProperties) {
         this.buildProperties = buildProperties;
     }

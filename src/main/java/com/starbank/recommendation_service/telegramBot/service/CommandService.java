@@ -36,7 +36,6 @@ public class CommandService {
         if (handler != null) {
             handler.handle(update);
         } else {
-            // Обработка неизвестной команды
             Long chatID = update.message().chat().id();
             SendMessage sendMessage = new SendMessage(chatID, "Unsupported command: " + command);
             telegramBot.execute(sendMessage);

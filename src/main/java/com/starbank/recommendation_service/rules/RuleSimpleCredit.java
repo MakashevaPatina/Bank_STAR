@@ -1,10 +1,6 @@
 package com.starbank.recommendation_service.rules;
 
 import com.starbank.recommendation_service.dto.RecommendationDTO;
-import com.starbank.recommendation_service.dto.RecommendationResponse;
-import com.starbank.recommendation_service.repository.RecommendationsRepository;
-import com.starbank.recommendation_service.service.RecommendationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
